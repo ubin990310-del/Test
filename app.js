@@ -200,7 +200,6 @@
       if (isInitialLoad) {
         isInitialLoad = false;
         updateSimTimeUI();
-        bindEvents();
         checkSession();
       } else {
         updateSimTimeUI();
@@ -359,6 +358,7 @@
 
   // 초기화 함수
   function init() {
+    bindEvents();
     loadState();
   }
 
@@ -1055,6 +1055,11 @@
     // 로그인 처리
     els.loginForm.addEventListener('submit', function (e) {
       e.preventDefault();
+      if (isInitialLoad) {
+        alert('시스템 데이터를 연동 중입니다. 약 1~3초 후 다시 시도해주세요.');
+        return;
+      }
+      
       const name = els.loginName.value.trim();
       const sabun = els.loginSabun.value.trim();
 
