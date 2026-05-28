@@ -3,7 +3,21 @@
    ========================================================================== */
 
 (function () {
-  // 1. 상태 객체 정의 (데이터는 LocalStorage에 영구 보존)
+  // Firebase 설정 및 초기화
+  const firebaseConfig = {
+    apiKey: "AIzaSyCzyTqjwruuCmYirGLPSIFZLl8AWCAjSGY",
+    authDomain: "system-f72e7.firebaseapp.com",
+    databaseURL: "https://system-f72e7-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "system-f72e7",
+    storageBucket: "system-f72e7.firebasestorage.app",
+    messagingSenderId: "1003125382453",
+    appId: "1:1003125382453:web:747f82b0a537d072e7807c",
+    measurementId: "G-K5FWCXD3GB"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // 1. 상태 객체 정의 (데이터는 Firebase 실시간 DB에 보존)
   const STATE_KEY = 'LGE_REGISTRATION_SYSTEM_STATE_V2';
   let appState = {
     centers: [],       // 센터 목록
@@ -167,25 +181,44 @@
   }
 
   // 5. 로컬스토리지 입출력 및 초기화
+  let isInitialLoad = true;
+
   function loadState() {
-    const raw = localStorage.getItem(STATE_KEY);
-    if (raw) {
-      try {
-        appState = JSON.parse(raw);
-        console.log("Loaded system state from LocalStorage.");
-      } catch (e) {
-        console.error("Failed to parse local storage state. Generating new state.", e);
-        appState = generateInitialState();
-        saveState();
+    db.ref('appState').on('value', (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        appState = data;
+        if (!appState.centers) appState.centers = [];
+        if (!appState.employees) appState.employees = [];
+      } else {
+        if (isInitialLoad) {
+          appState = generateInitialState();
+          saveState();
+        }
       }
-    } else {
-      appState = generateInitialState();
-      saveState();
-    }
+      
+      if (isInitialLoad) {
+        isInitialLoad = false;
+        updateSimTimeUI();
+        bindEvents();
+        checkSession();
+      } else {
+        updateSimTimeUI();
+        if (currentUser) {
+          if (currentUser.role === 'admin') {
+            renderAdminDashboard();
+          } else {
+            renderDashboard();
+          }
+        }
+      }
+    });
   }
 
   function saveState() {
-    localStorage.setItem(STATE_KEY, JSON.stringify(appState));
+    if (db) {
+      db.ref('appState').set(appState);
+    }
   }
 
   // 6. 비즈니스 핵심 로직 연산기
@@ -226,76 +259,7 @@
     return 'OPEN';
   }
 
-  // 7. 로그인 / 로그아웃 시스템
-  function attemptLogin(name, sabun) {
-    name = name.trim();
-    sabun = sabun.trim();
-
-    // 100개 가상 센터 리더 목록에서 일치하는 계정 탐색
-    let matchedCenter = appState.centers.find(c => 
-      (c.leaderName === name && c.leaderSabun === sabun) || 
-      (c.managerName === name && c.managerSabun === sabun)
-    );
-
-    if (matchedCenter) {
-      const isLeader = matchedCenter.leaderSabun === sabun;
-      currentUser = {
-        name: name,
-        sabun: sabun,
-        role: isLeader ? '센터장' : '실장',
-        centerId: matchedCenter.id,
-        centerName: matchedCenter.name,
-        region: matchedCenter.region
-      };
-      return true;
-    }
-
-    // [피드백 반영 예외 처리] 만약 목록에 없는 이름/사번이면 즉석에서 새로운 "가상 테스트 센터"를 개설하여 로그인을 성공시킵니다!
-    // 사번의 첫 자리가 2면 중부, 3이면 서남부, 그 외에는 수도권으로 자동 배정
-    let autoRegion = '수도권';
-    if (sabun.startsWith('2')) autoRegion = '중부/강원실';
-    else if (sabun.startsWith('3')) autoRegion = '서남부/충청실';
-
-    const newCenterId = appState.centers.length + 1;
-    const newCenterName = `가상_${name}센터`;
-    
-    // 신규 가상 센터 추가
-    appState.centers.push({
-      id: newCenterId,
-      name: newCenterName,
-      region: autoRegion,
-      leaderName: name,
-      leaderSabun: sabun,
-      managerName: name + '_실장',
-      managerSabun: '99' + sabun
-    });
-
-    // 신규 구성원 20명 자동 추가
-    for (let i = 1; i <= 20; i++) {
-      appState.employees.push({
-        id: employeeCounterNext(),
-        centerId: newCenterId,
-        region: autoRegion,
-        name: generateRandomName(),
-        sabun: String(employeeCounterNext()),
-        rank: RANKS[Math.floor(Math.random() * RANKS.length)],
-        registeredClass: null,
-        registeredDate: null
-      });
-    }
-
-    saveState();
-
-    currentUser = {
-      name: name,
-      sabun: sabun,
-      role: '센터장',
-      centerId: newCenterId,
-      centerName: newCenterName,
-      region: autoRegion
-    };
-    return true;
-  }
+  // 7. 로그인 / 로그아웃 시스템 (Firebase 연동으로 이벤트 핸들러에서 직접 처리)
 
   function employeeCounterNext() {
     if (!window.empCounter) {
@@ -396,9 +360,6 @@
   // 초기화 함수
   function init() {
     loadState();
-    updateSimTimeUI();
-    bindEvents();
-    checkSession();
   }
 
   // 8. 세션 및 날짜 시뮬레이터 동기화
@@ -406,8 +367,16 @@
     const savedSession = sessionStorage.getItem('LGE_REG_SESSION');
     if (savedSession) {
       currentUser = JSON.parse(savedSession);
-      showPage('dashboard-container');
-      renderDashboard();
+      
+      if (currentUser.role !== 'admin') {
+        db.ref('centerLocks/' + currentUser.centerId).set(true);
+        db.ref('centerLocks/' + currentUser.centerId).onDisconnect().remove();
+        showPage('dashboard-container');
+        renderDashboard();
+      } else {
+        showPage('admin-container');
+        renderAdminDashboard();
+      }
     } else {
       showPage('login-container');
     }
@@ -1086,36 +1055,64 @@
     // 로그인 처리
     els.loginForm.addEventListener('submit', function (e) {
       e.preventDefault();
-      const name = els.loginName.value;
-      const sabun = els.loginSabun.value;
+      const name = els.loginName.value.trim();
+      const sabun = els.loginSabun.value.trim();
 
-      if (attemptLogin(name, sabun)) {
-        // 세션 보존
+      // 관리자 체크
+      if (name === '어드민' && sabun === '9999') {
+        currentUser = { role: 'admin', name: '어드민', sabun: '9999' };
         sessionStorage.setItem('LGE_REG_SESSION', JSON.stringify(currentUser));
-        
-        // 대시보드로 이동
+        els.loginForm.reset();
+        showPage('admin-container');
+        renderAdminDashboard();
+        return;
+      }
+
+      let matchedCenter = appState.centers.find(c => 
+        (c.leaderName === name && c.leaderSabun === sabun) || 
+        (c.managerName === name && c.managerSabun === sabun)
+      );
+
+      if (!matchedCenter) {
+        alert('일치하는 센터장 또는 실장 정보가 없습니다.\\n이름과 사번을 올바르게 입력해주세요.');
+        return;
+      }
+
+      // 센터 락 체크
+      db.ref('centerLocks/' + matchedCenter.id).once('value').then(snap => {
+        if (snap.val() === true) {
+          alert('현재 해당 센터의 다른 관리자가 접속 중입니다. (중복 로그인 방지)');
+          return;
+        }
+
+        // 락 걸기
+        db.ref('centerLocks/' + matchedCenter.id).set(true);
+        db.ref('centerLocks/' + matchedCenter.id).onDisconnect().remove();
+
+        const isLeader = matchedCenter.leaderSabun === sabun;
+        currentUser = {
+          name: name,
+          sabun: sabun,
+          role: isLeader ? '센터장' : '실장',
+          centerId: matchedCenter.id,
+          centerName: matchedCenter.name,
+          region: matchedCenter.region
+        };
+
+        sessionStorage.setItem('LGE_REG_SESSION', JSON.stringify(currentUser));
         els.loginName.value = '';
         els.loginSabun.value = '';
         showPage('dashboard-container');
         renderDashboard();
-      } else {
-        alert('이름과 사번을 올바르게 입력해주세요.');
-      }
-    });
-
-    // 데모 계정 클릭 이벤트
-    document.querySelectorAll('.btn-demo-acc').forEach(btn => {
-      btn.addEventListener('click', function () {
-        const name = this.getAttribute('data-name');
-        const sabun = this.getAttribute('data-sabun');
-        els.loginName.value = name;
-        els.loginSabun.value = sabun;
       });
     });
 
     // 로그아웃
     els.btnLogout.addEventListener('click', function () {
       if (confirm('정말로 로그아웃 하시겠습니까?')) {
+        if (currentUser && currentUser.role !== 'admin') {
+          db.ref('centerLocks/' + currentUser.centerId).remove();
+        }
         sessionStorage.removeItem('LGE_REG_SESSION');
         currentUser = null;
         showPage('login-container');

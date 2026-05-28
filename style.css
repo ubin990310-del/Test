@@ -1091,12 +1091,24 @@ a {
 }
 
 .modal-footer {
-  padding: 20px 28px;
-  border-top: 1px solid var(--slate-100);
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--slate-200);
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  background: var(--slate-50);
+  gap: 0.75rem;
+}
+
+.modal-footer .btn-close-modal {
+  background-color: var(--lg-red) !important;
+  color: #ffffff !important;
+  white-space: nowrap;
+  padding: 0.6rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  border: none;
+}
+.modal-footer .btn-close-modal:hover {
+  background-color: #a00025 !important;
 }
 
 .btn-outline {
