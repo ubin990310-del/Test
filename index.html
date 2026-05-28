@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LG전자 서비스 매니저 전사원 과정 수강신청</title>
+  <!-- Google Fonts & Pretendard CDN -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- 통합 시뮬레이터 배너 (현재 날짜 테스트용) -->
+  <div id="simulator-banner" class="simulator-banner">
+    <div class="simulator-container">
+      <div class="sim-badge">테스트 시뮬레이터</div>
+      <div class="sim-info">
+        <span class="sim-label">현재 시스템 가상 시각:</span>
+        <span id="current-sim-time" class="sim-time">2026-05-27 17:10:00</span>
+      </div>
+      <div class="sim-controls">
+        <input type="datetime-local" id="sim-date-input" value="2026-05-27T17:10">
+        <button id="btn-apply-sim-date" class="btn-sim-apply">날짜 적용</button>
+        <button id="btn-reset-sim-date" class="btn-sim-reset">오늘로 초기화</button>
+      </div>
+      <div class="sim-tip">
+        💡 차수 시작 2일 전 마감 룰 테스트를 위해 가상 날짜를 변경해 보세요!
+      </div>
+    </div>
+  </div>
+
+  <div class="app-wrapper">
+    <!-- ================= 로그인 화면 ================= -->
+    <div id="login-container" class="page-container active-page">
+      <div class="login-card">
+        <div class="login-brand">
+          <svg class="lg-logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="48" fill="#C3002F" />
+            <path d="M 50 15 A 35 35 0 0 1 85 50" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+            <path d="M 33 42 A 8 8 0 0 0 42 50 L 68 50" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="34" cy="34" r="5.5" fill="#FFFFFF"/>
+          </svg>
+          <div class="brand-text">
+            <span class="brand-title">LG Electronics</span>
+            <span class="brand-subtitle">서비스 아카데미</span>
+          </div>
+        </div>
+        
+        <h1 class="login-title">서비스 매니저 전사원 과정<br><span class="highlight">수강신청 시스템</span></h1>
+        <p class="login-desc">센터장 및 실장 사번으로 로그인하여 구성원의 수강신청 및 일정 변경을 관리할 수 있습니다.</p>
+
+        <form id="login-form" class="login-form">
+          <div class="form-group">
+            <label for="login-name">성명</label>
+            <div class="input-wrapper">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <input type="text" id="login-name" placeholder="이름을 입력하세요" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="login-sabun">사번 (사전등록 또는 가상 생성)</label>
+            <div class="input-wrapper">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input type="text" id="login-sabun" placeholder="사번을 입력하세요 (예: 1001, 1002)" required>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary btn-login">
+            로그인
+            <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+        </form>
+
+        <div class="demo-accounts-box">
+          <div class="demo-title">💡 빠른 테스트 데모 계정</div>
+          <div class="demo-grid">
+            <button class="btn-demo-acc" data-name="김서울" data-sabun="1001">
+              <strong>김서울 (수도권)</strong>
+              <span>강남센터 · 사번 1001</span>
+            </button>
+            <button class="btn-demo-acc" data-name="이중부" data-sabun="2001">
+              <strong>이중부 (중부/강원)</strong>
+              <span>대전센터 · 사번 2001</span>
+            </button>
+            <button class="btn-demo-acc" data-name="박서남" data-sabun="3001">
+              <strong>박서남 (서남부/충청)</strong>
+              <span>광주센터 · 사번 3001</span>
+            </button>
+          </div>
+          <p class="demo-note">* 임의의 다른 성명/사번을 입력하여 로그인 시, 해당 지역의 **가상 신규 센터가 자동 개설**되어 간편한 추가 테스트가 가능합니다!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 메인 대시보드 (센터장/실장용) ================= -->
+    <div id="dashboard-container" class="page-container">
+      <!-- 헤더 -->
+      <header class="dashboard-header">
+        <div class="header-left">
+          <div class="header-logo">
+            <svg class="lg-logo-svg-sm" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="50" r="48" fill="#C3002F" />
+              <path d="M 50 15 A 35 35 0 0 1 85 50" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+              <path d="M 33 42 A 8 8 0 0 0 42 50 L 68 50" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="34" cy="34" r="5.5" fill="#FFFFFF"/>
+            </svg>
+            <div class="header-title-box">
+              <h2>전사원 과정 수강신청</h2>
+              <p>Service Manager Core Course Registration</p>
+            </div>
+          </div>
+        </div>
+        <div class="header-right">
+          <div class="user-profile">
+            <div class="user-avatar">
+              <span id="user-initial">김</span>
+            </div>
+            <div class="user-info">
+              <span id="user-name-title" class="user-name">김서울 센터장</span>
+              <span id="user-center-title" class="user-center">수도권 · 강남센터</span>
+            </div>
+          </div>
+          <button id="btn-logout" class="btn-outline-sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="logout-icon"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            로그아웃
+          </button>
+        </div>
+      </header>
+
+      <!-- 요약 통계 카드 -->
+      <section class="stats-overview">
+        <div class="stat-card gradient-red">
+          <div class="stat-icon-wrapper">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="stat-icon"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">우리 센터 총원</span>
+            <span id="stat-center-total" class="stat-value">28명</span>
+          </div>
+        </div>
+        <div class="stat-card gradient-blue">
+          <div class="stat-icon-wrapper">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="stat-icon"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">수강신청 완료</span>
+            <span id="stat-center-registered" class="stat-value">18명</span>
+          </div>
+        </div>
+        <div class="stat-card gradient-orange">
+          <div class="stat-icon-wrapper">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="stat-icon"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">미신청 인원</span>
+            <span id="stat-center-unregistered" class="stat-value">10명</span>
+          </div>
+        </div>
+        <div class="stat-card gradient-purple">
+          <div class="stat-icon-wrapper">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="stat-icon"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">수강 신청률</span>
+            <span id="stat-center-rate" class="stat-value">64.2%</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 메인 콘텐츠 영역 (2단 레이아웃) -->
+      <div class="dashboard-grid">
+        <!-- 왼쪽: 센터 구성원 목록 -->
+        <main class="grid-main-card">
+          <div class="card-header">
+            <div class="header-info">
+              <h3>우리 센터 구성원 수강신청 현황</h3>
+              <p>매니저 명단을 확인하고 수강 차수를 지정하거나 일정을 변경할 수 있습니다.</p>
+            </div>
+            <div class="header-actions">
+              <button id="btn-add-manager" class="btn-primary-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                구성원 추가
+              </button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>이름</th>
+                  <th>사번</th>
+                  <th>직급</th>
+                  <th>신청 상태</th>
+                  <th>수강 차수</th>
+                  <th>교육 기간</th>
+                  <th>작업</th>
+                </tr>
+              </thead>
+              <tbody id="manager-table-body">
+                <!-- Javascript로 동적 렌더링 -->
+              </tbody>
+            </table>
+          </div>
+        </main>
+
+        <!-- 오른쪽: 차수별 실시간 현황 현황판 -->
+        <aside class="grid-side-card">
+          <div class="card-header">
+            <div class="header-info">
+              <h3><span id="side-region-title">수도권</span> 1~30차수 현황판</h3>
+              <p>실시간 신청 비율 및 정원 현황을 확인합니다.</p>
+            </div>
+          </div>
+          <div class="class-summary-list" id="class-summary-container">
+            <!-- Javascript로 동적 렌더링 -->
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <!-- 푸터 (관리자 접속 및 카피라이트) -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <p>© 2026 LG Electronics. All rights reserved. (LGE Service Academy)</p>
+      <div class="footer-links">
+        <button id="btn-goto-admin" class="btn-link-admin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="admin-icon"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          교육 관리자 시스템 바로가기
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ================= 모달 창들 ================= -->
+
+  <!-- 1. 수강신청 / 변경 모달 -->
+  <div id="modal-register" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-register-title">수강신청</h3>
+        <button class="btn-close-modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="close-icon"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- 피신청자 정보 요약 -->
+        <div class="register-target-card">
+          <div class="target-row">
+            <div class="target-field">
+              <span class="lbl">대상자 성명</span>
+              <span id="reg-target-name" class="val">홍길동</span>
+            </div>
+            <div class="target-field">
+              <span class="lbl">사번</span>
+              <span id="reg-target-sabun" class="val">123456</span>
+            </div>
+            <div class="target-field">
+              <span class="lbl">지역담당</span>
+              <span id="reg-target-region" class="val">수도권</span>
+            </div>
+          </div>
+          <div class="current-reg-badge-box">
+            <span class="lbl">현재 등록 차수:</span>
+            <span id="reg-current-status" class="status-badge orange">미신청</span>
+          </div>
+        </div>
+
+        <h4 class="select-class-title">신청 희망 차수 선택 <span class="sub">(정원 60명 한도, 2일 전 자동 마감)</span></h4>
+        
+        <!-- 차수 그리드 선택 리스트 -->
+        <div class="class-selection-grid" id="modal-class-grid">
+          <!-- Javascript로 동적 렌더링 -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-outline btn-close-modal">취소</button>
+        <button id="btn-submit-registration" class="btn-primary" disabled>수강 신청 완료</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 신규 구성원 추가 모달 -->
+  <div id="modal-add-manager" class="modal-overlay">
+    <div class="modal-card small-modal">
+      <div class="modal-header">
+        <h3>우리 센터 신규 구성원 추가</h3>
+        <button class="btn-close-modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="close-icon"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form id="add-manager-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="add-name">성명</label>
+            <input type="text" id="add-name" placeholder="매니저 성명 입력" required>
+          </div>
+          <div class="form-group">
+            <label for="add-sabun">사번 (8자리 숫자 권장)</label>
+            <input type="text" id="add-sabun" placeholder="사번 입력 (예: 500123)" required>
+          </div>
+          <div class="form-group">
+            <label for="add-rank">직급</label>
+            <select id="add-rank" required>
+              <option value="매니저" selected>서비스 매니저</option>
+              <option value="선임 매니저">선임 서비스 매니저</option>
+              <option value="책임 매니저">책임 서비스 매니저</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-outline btn-close-modal">취소</button>
+          <button type="submit" class="btn-primary">구성원 추가</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. 차수별 상세 인원 명단 (어느센터 누가) 모달 -->
+  <div id="modal-class-details" class="modal-overlay">
+    <div class="modal-card medium-modal">
+      <div class="modal-header">
+        <h3><span id="detail-class-title">수도권 1차수</span> 수강신청 명단</h3>
+        <button class="btn-close-modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="close-icon"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="class-detail-meta">
+          <div class="meta-item">
+            <span class="lbl">교육 일정</span>
+            <span id="detail-class-date" class="val">2026-06-01 ~ 2026-06-05</span>
+          </div>
+          <div class="meta-item">
+            <span class="lbl">신청 현황</span>
+            <span id="detail-class-count" class="val font-semibold">45 / 60명</span>
+          </div>
+          <div class="meta-item">
+            <span class="lbl">마감 상태</span>
+            <span id="detail-class-status" class="status-badge green">신청가능</span>
+          </div>
+        </div>
+
+        <h4 class="detail-list-title">신청 완료 명단 <span class="sub">(센터 및 이름순 정렬)</span></h4>
+        <div class="detail-table-wrapper">
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>순번</th>
+                <th>지역</th>
+                <th>센터명</th>
+                <th>사번</th>
+                <th>성명</th>
+                <th>직급</th>
+                <th>신청일시</th>
+              </tr>
+            </thead>
+            <tbody id="detail-attendee-list">
+              <!-- JS 동적 렌더링 -->
+            </tbody>
+          </table>
+          <div id="detail-empty-message" class="empty-state-box">
+            등록된 수강 신청자가 없습니다.
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary btn-close-modal">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 관리자 비밀번호 검증 모달 -->
+  <div id="modal-admin-auth" class="modal-overlay">
+    <div class="modal-card mini-modal">
+      <div class="modal-header">
+        <h3>교육 관리자 인증</h3>
+        <button class="btn-close-modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="close-icon"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form id="admin-auth-form">
+        <div class="modal-body">
+          <p class="admin-auth-tip">관리자 전용 시스템 진입을 위해 비밀번호를 입력해 주세요.</p>
+          <div class="form-group">
+            <label for="admin-password">관리자 패스워드</label>
+            <input type="password" id="admin-password" placeholder="비밀번호 입력" required autofocus>
+            <div id="admin-auth-error" class="error-msg">❌ 비밀번호가 올바르지 않습니다. (힌트: 2026)</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-outline btn-close-modal">취소</button>
+          <button type="submit" class="btn-primary">인증</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. 관리자 통합 콘솔 (전체 마스터 제어 대시보드) 모달 -->
+  <div id="modal-admin-panel" class="modal-overlay">
+    <div class="modal-card xlarge-modal">
+      <div class="modal-header">
+        <div class="admin-panel-title">
+          <div class="admin-icon-glow">🛠️</div>
+          <div>
+            <h3>교육 아카데미 종합 관리 콘솔</h3>
+            <p class="sub">전체 3개 지역담당(각 30개 차수)의 등록 현황 파악, 일정 관리 및 데이터 엑셀(CSV) 백업</p>
+          </div>
+        </div>
+        <div class="admin-header-actions">
+          <button id="btn-admin-reset-data" class="btn-danger-sm">
+            ⚠️ 전체 데이터 초기화
+          </button>
+          <button class="btn-close-modal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="close-icon"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="modal-body admin-scrollable-body">
+        
+        <!-- 전사 수강신청 통합 현황 판넬 -->
+        <section class="admin-summary-grid">
+          <div class="admin-sum-card card-total">
+            <span class="lbl">전체 매니저 대상 인원</span>
+            <span id="admin-total-managers" class="val">3,000명</span>
+            <div class="progress-bar-container">
+              <div id="admin-total-progress" class="progress-fill" style="width: 70%"></div>
+            </div>
+            <span id="admin-total-reg-lbl" class="sub-lbl">총 2,100명 신청 완료 (70.0%)</span>
+          </div>
+
+          <div class="admin-sum-card card-metropolitan">
+            <span class="lbl">수도권 본부 (1~30차수)</span>
+            <span id="admin-met-count" class="val">980 / 1,200명</span>
+            <div class="progress-bar-container">
+              <div id="admin-met-progress" class="progress-fill met" style="width: 81.6%"></div>
+            </div>
+            <span class="sub-lbl">신청률: <span id="admin-met-rate">81.6%</span></span>
+          </div>
+
+          <div class="admin-sum-card card-central">
+            <span class="lbl">중부/강원실 (1~30차수)</span>
+            <span id="admin-cen-count" class="val">540 / 900명</span>
+            <div class="progress-bar-container">
+              <div id="admin-cen-progress" class="progress-fill cen" style="width: 60.0%"></div>
+            </div>
+            <span class="sub-lbl">신청률: <span id="admin-cen-rate">60.0%</span></span>
+          </div>
+
+          <div class="admin-sum-card card-southwest">
+            <span class="lbl">서남부/충청실 (1~30차수)</span>
+            <span id="admin-sou-count" class="val">580 / 900명</span>
+            <div class="progress-bar-container">
+              <div id="admin-sou-progress" class="progress-fill sou" style="width: 64.4%"></div>
+            </div>
+            <span class="sub-lbl">신청률: <span id="admin-sou-rate">64.4%</span></span>
+          </div>
+        </section>
+
+        <!-- 통합 다운로드 및 지역 탭 필터 영역 -->
+        <div class="admin-action-bar">
+          <div class="region-tabs-container">
+            <button class="tab-btn active" data-tab="tab-all-regions">전체 지역보기</button>
+            <button class="tab-btn" data-tab="tab-metro">수도권</button>
+            <button class="tab-btn" data-tab="tab-central">중부/강원실</button>
+            <button class="tab-btn" data-tab="tab-southwest">서남부/충청실</button>
+          </div>
+          
+          <div class="export-actions">
+            <button id="btn-export-excel" class="btn-success">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="excel-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              전체 명단 Excel(CSV) 다운로드
+            </button>
+          </div>
+        </div>
+
+        <!-- 각 지역별 1~30차수 리스트 뷰 및 날짜 수정 패널 -->
+        <div class="admin-regions-panel-content">
+          <!-- 1. 수도권 -->
+          <div class="region-content-section active-section" id="admin-panel-region-metro">
+            <div class="section-title-strip">
+              <h4>수도권 본부 교육 과정 현황 (총 30개 차수)</h4>
+              <button class="btn-export-region-excel btn-outline-sm" data-region="수도권">수도권 명단만 Excel 다운로드</button>
+            </div>
+            <div class="admin-class-grid-list" id="admin-grid-metro">
+              <!-- JS 동적 렌더링 -->
+            </div>
+          </div>
+
+          <!-- 2. 중부/강원실 -->
+          <div class="region-content-section" id="admin-panel-region-central">
+            <div class="section-title-strip">
+              <h4>중부/강원실 교육 과정 현황 (총 30개 차수)</h4>
+              <button class="btn-export-region-excel btn-outline-sm" data-region="중부/강원실">중부/강원실 명단만 Excel 다운로드</button>
+            </div>
+            <div class="admin-class-grid-list" id="admin-grid-central">
+              <!-- JS 동적 렌더링 -->
+            </div>
+          </div>
+
+          <!-- 3. 서남부/충청실 -->
+          <div class="region-content-section" id="admin-panel-region-southwest">
+            <div class="section-title-strip">
+              <h4>서남부/충청실 교육 과정 현황 (총 30개 차수)</h4>
+              <button class="btn-export-region-excel btn-outline-sm" data-region="서남부/충청실">서남부/충청실 명단만 Excel 다운로드</button>
+            </div>
+            <div class="admin-class-grid-list" id="admin-grid-southwest">
+              <!-- JS 동적 렌더링 -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn-outline btn-close-modal">관리자 콘솔 닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
