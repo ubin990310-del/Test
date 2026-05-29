@@ -44,7 +44,7 @@
           // 주말 제외 5일 교육
           const start = new Date(baseDate);
           const end = new Date(baseDate);
-          end.setDate(end.getDate() + 4); // 월~금
+          end.setDate(end.getDate() + 1); // 1박 2일 (월~화 등)
           
           schedules[region].push({
             classNum: i,
