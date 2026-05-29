@@ -1074,8 +1074,8 @@
       }
 
       let matchedCenter = appState.centers.find(c => 
-        (c.leaderName === name && c.leaderSabun === sabun) || 
-        (c.managerName === name && c.managerSabun === sabun)
+        ((c.leaderName || '').trim() === name && (c.leaderSabun || '').trim() === sabun) || 
+        ((c.managerName || '').trim() === name && (c.managerSabun || '').trim() === sabun)
       );
 
       if (!matchedCenter) {
