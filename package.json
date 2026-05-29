@@ -1,0 +1,8 @@
+{
+  "name": "lg-service-registration",
+  "version": "1.0.0",
+  "description": "LG Service Registration with Vercel KV",
+  "dependencies": {
+    "@vercel/kv": "^1.0.1"
+  }
+}

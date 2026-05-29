@@ -168,23 +168,31 @@
       return state;
     }
 
-    // 5. 로컬스토리지 입출력 및 초기화
+    // 5. Vercel KV API 연동 입출력 및 초기화
     let isInitialLoad = true;
+    let isFetching = false;
 
-    function loadState() {
-      const saved = localStorage.getItem(STATE_KEY);
-      if (saved) {
-        try {
-          appState = JSON.parse(saved);
-          if (!appState.centers) appState.centers = [];
-          if (!appState.employees) appState.employees = [];
-        } catch(e) {
-          appState = generateInitialState();
-          saveState();
-        }
+    async function fetchState() {
+      try {
+        const res = await fetch('/api/state');
+        if (!res.ok) throw new Error('API Error');
+        const data = await res.json();
+        return data;
+      } catch(e) {
+        console.error("fetchState error:", e);
+        return null;
+      }
+    }
+
+    async function loadState() {
+      const data = await fetchState();
+      if (data && data.state) {
+        appState = data.state;
+        if (!appState.centers) appState.centers = [];
+        if (!appState.employees) appState.employees = [];
       } else {
         appState = generateInitialState();
-        saveState();
+        await saveState();
       }
       
       isInitialLoad = false;
@@ -192,8 +200,19 @@
       checkSession();
     }
 
-    function saveState() {
-      localStorage.setItem(STATE_KEY, JSON.stringify(appState));
+    async function saveState() {
+      try {
+        await fetch('/api/state', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'saveState',
+            payload: appState
+          })
+        });
+      } catch(e) {
+        console.error('saveState error:', e);
+      }
     }
 
     // 6. 비즈니스 핵심 로직 연산기
@@ -333,9 +352,9 @@
     let selectedRegistrationClassNum = null; // 신청 모달에서 선택한 신규 차수 번호
 
     // 초기화 함수
-    function init() {
+    async function init() {
       bindEvents();
-      loadState();
+      await loadState();
     }
 
     // 8. 세션 및 날짜 시뮬레이터 동기화
@@ -625,10 +644,26 @@
       openModal('modal-register');
     }
 
-    function handleAddRegistrationSubmit() {
+    async function handleAddRegistrationSubmit() {
       if (!activeRegisteringEmployee || !selectedRegistrationClassNum) return;
 
-      const emp = activeRegisteringEmployee;
+      els.btnSubmitRegistration.disabled = true;
+      els.btnSubmitRegistration.textContent = '처리 중...';
+
+      // 1) 동시 접속 대비: 저장하기 직전에 최신 데이터 다시 불러오기
+      const data = await fetchState();
+      if (data && data.state) {
+        appState = data.state;
+      }
+
+      // 상태 업데이트 후 참조 갱신 (appState가 덮어써졌으므로)
+      const emp = appState.employees.find(e => e.sabun === activeRegisteringEmployee.sabun);
+      if (!emp) {
+        els.btnSubmitRegistration.disabled = false;
+        els.btnSubmitRegistration.textContent = '확인 및 수강신청';
+        return;
+      }
+
       const targetClassNum = selectedRegistrationClassNum;
       const region = emp.region;
 
@@ -636,10 +671,14 @@
       const status = getClassStatus(region, targetClassNum);
       if (status === 'LOCKED') {
         alert('⚠️ 해당 차수는 교육 시작 2일 전으로 수강신청이 마감되었습니다.');
+        els.btnSubmitRegistration.disabled = false;
+        els.btnSubmitRegistration.textContent = '확인 및 수강신청';
         return;
       }
       if (status === 'FULL') {
-        alert('⚠️ 해당 차수는 이미 정원(60명)이 만료되었습니다.');
+        alert('⚠️ 해당 차수는 방금 전 다른 매니저의 신청으로 인해 정원(60명)이 만료되었습니다. 다른 차수를 선택해주세요.');
+        els.btnSubmitRegistration.disabled = false;
+        els.btnSubmitRegistration.textContent = '확인 및 수강신청';
         return;
       }
 
@@ -648,6 +687,8 @@
         const oldSchedule = appState.classSchedules[region].find(s => s.classNum === emp.registeredClass);
         if (oldSchedule && isClassDateLocked(oldSchedule.startDate, appState.currentSimTime)) {
           alert('⚠️ 기존에 소속되었던 차수가 교육 시작 2일 전 범위에 있어 변경할 수 없습니다.');
+          els.btnSubmitRegistration.disabled = false;
+          els.btnSubmitRegistration.textContent = '확인 및 수강신청';
           return;
         }
       }
@@ -659,14 +700,23 @@
       emp.registeredClass = targetClassNum;
       emp.registeredDate = dateStr;
 
-      saveState();
+      await saveState();
       closeModal('modal-register');
       renderDashboard();
       
       alert(`🎉 [${emp.name} 매니저] 수강신청이 성공적으로 완료되었습니다! (${targetClassNum}차수)`);
+      
+      els.btnSubmitRegistration.disabled = false;
+      els.btnSubmitRegistration.textContent = '확인 및 수강신청';
     }
 
-    function handleCancelRegistration(sabun) {
+    async function handleCancelRegistration(sabun) {
+      // 1) 동시 접속 대비 최신화
+      const data = await fetchState();
+      if (data && data.state) {
+        appState = data.state;
+      }
+
       const emp = appState.employees.find(e => e.sabun === sabun);
       if (!emp || emp.registeredClass === null) return;
 
@@ -680,7 +730,7 @@
         emp.registeredClass = null;
         emp.registeredDate = null;
         
-        saveState();
+        await saveState();
         renderDashboard();
         alert('수강신청이 취소되었습니다.');
       }
@@ -1027,7 +1077,7 @@
     // 18. 이벤트 바인딩 마스터
     function bindEvents() {
       // 로그인 처리
-      els.loginForm.addEventListener('submit', function (e) {
+      els.loginForm.addEventListener('submit', async function (e) {
         e.preventDefault();
         if (isInitialLoad) {
           alert('시스템 데이터를 연동 중입니다. 약 1~3초 후 다시 시도해주세요.');
@@ -1057,7 +1107,35 @@
           return;
         }
 
-        // 로컬스토리지 버전에서는 동시 접속 제어를 수행하지 않습니다.
+        // Vercel KV 동시 접속 제어 (락 체크)
+        const btnLogin = document.querySelector('.btn-login');
+        if (btnLogin) {
+          btnLogin.disabled = true;
+          btnLogin.textContent = '로그인 중...';
+        }
+
+        try {
+          const res = await fetch('/api/state', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+              action: 'lockCenter',
+              payload: { centerId: matchedCenter.id, sabun: sabun }
+            })
+          });
+
+          if (res.status === 409) {
+            alert('현재 해당 센터의 다른 관리자가 접속하여 작업 중입니다.\\n동시 접속은 불가능합니다. 잠시 후 다시 시도해주세요.');
+            if (btnLogin) {
+              btnLogin.disabled = false;
+              btnLogin.textContent = '접속하기';
+            }
+            return;
+          }
+        } catch (e) {
+          console.error("Lock error:", e);
+        }
+
         const isLeader = matchedCenter.leaderSabun === sabun;
         currentUser = {
           name: name,
@@ -1071,13 +1149,31 @@
         sessionStorage.setItem('LGE_REG_SESSION', JSON.stringify(currentUser));
         els.loginName.value = '';
         els.loginSabun.value = '';
+        
+        if (btnLogin) {
+          btnLogin.disabled = false;
+          btnLogin.textContent = '접속하기';
+        }
+        
         showPage('dashboard-container');
         renderDashboard();
       });
 
       // 로그아웃
-      els.btnLogout.addEventListener('click', function () {
+      els.btnLogout.addEventListener('click', async function () {
         if (confirm('정말로 로그아웃 하시겠습니까?')) {
+          if (currentUser && currentUser.role !== 'admin') {
+            try {
+              await fetch('/api/state', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                  action: 'unlockCenter',
+                  payload: { centerId: currentUser.centerId }
+                })
+              });
+            } catch (e) {}
+          }
           sessionStorage.removeItem('LGE_REG_SESSION');
           currentUser = null;
           showPage('login-container');
@@ -1104,9 +1200,15 @@
         openModal('modal-add-manager');
       });
 
-      els.addManagerForm.addEventListener('submit', function (e) {
+      els.addManagerForm.addEventListener('submit', async function (e) {
         e.preventDefault();
         if (!currentUser) return;
+
+        // 1) 동시 접속 대비 최신화
+        const data = await fetchState();
+        if (data && data.state) {
+          appState = data.state;
+        }
 
         const name = els.addName.value.trim();
         const sabun = els.addSabun.value.trim();
@@ -1131,7 +1233,7 @@
           registeredDate: null
         });
 
-        saveState();
+        await saveState();
         closeModal('modal-add-manager');
         renderDashboard();
         
@@ -1235,10 +1337,10 @@
       });
 
       // 관리자 데이터 초기화
-      els.btnAdminResetData.addEventListener('click', () => {
+      els.btnAdminResetData.addEventListener('click', async () => {
         if (confirm('🚨 주의: 모든 수강신청 정보와 임의 수정한 차수 일정이 영구 삭제되고 초기화됩니다. 계속하시겠습니까?')) {
           appState = generateInitialState();
-          saveState();
+          await saveState();
           closeModal('modal-admin-panel');
           
           if (currentUser) {
