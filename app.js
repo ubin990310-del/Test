@@ -184,7 +184,15 @@
   let isInitialLoad = true;
 
   function loadState() {
+    // 사내망 방화벽 등 차단 의심 체크 타이머
+    const connectionTimeout = setTimeout(() => {
+      if (isInitialLoad) {
+        alert('⚠️ 시스템 데이터 연동이 지연되고 있습니다.\n\n원인: LG 사내망(보안 네트워크) 또는 방화벽에서 실시간 데이터베이스(Firebase) 접속을 차단했을 가능성이 높습니다.\n해결: 스마트폰(LTE/5G) 기기나 사외망에서 접속을 테스트해 주세요.');
+      }
+    }, 5000);
+
     db.ref('appState').on('value', (snapshot) => {
+      clearTimeout(connectionTimeout);
       const data = snapshot.val();
       if (data) {
         appState = data;
