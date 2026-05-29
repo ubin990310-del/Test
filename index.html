@@ -4,6 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LG전자 서비스 매니저 전사원 과정 수강신청</title>
+  <script>
+    window.onerror = function(msg, url, lineNo, columnNo, error) {
+      alert("🚨 시스템 오류 발생\n오류내용: " + msg + "\n줄번호: " + lineNo);
+      return false;
+    };
+    window.addEventListener('unhandledrejection', function(event) {
+      alert("🚨 비동기 시스템 오류 발생\n오류내용: " + event.reason);
+    });
+  </script>
   <!-- Google Fonts & Pretendard CDN -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -498,7 +507,7 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-  <script src="data.js?v=4"></script>
-  <script src="app.js?v=4"></script>
+  <script src="data.js?v=5"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>
